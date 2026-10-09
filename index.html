@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HACK_OVERRIDE // Password Matrix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="scanline-overlay"></div>
+
+    <header class="cyber-header">
+        <div class="logo">
+            <span class="glitch" data-text="SYSTEM_OVERRIDE">SYSTEM_OVERRIDE</span>
+            <span class="sub-logo">[SECURITY_PROTOCOL_v4.09]</span>
+        </div>
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="label">STATUS:</span>
+                <span class="value blinking" id="sys-status">BYPASS_IN_PROGRESS</span>
+            </div>
+            <div class="status-item">
+                <span class="label">RULES_PASSED:</span>
+                <span class="value" id="passed-count">0 / 0</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="cyber-container">
+        <section class="input-section card">
+            <div class="card-header">
+                <h2>// INPUT_KEYFRAME</h2>
+                <div class="char-count">CHARS: <span id="length-val">0</span></div>
+            </div>
+            <div class="input-wrapper">
+                <textarea id="password-input" placeholder="Escribe la contraseña requerida..." rows="3" spellcheck="false" autofocus></textarea>
+                <div class="input-glow"></div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+        </section>
+
+        <section class="rules-section">
+            <div class="rules-header">
+                <h2>// PROTOCOLS_INSPECTION</h2>
+            </div>
+            <div id="rules-container" class="rules-list">
+                <!-- Las reglas se renderizan dinámicamente -->
+            </div>
+        </section>
+
+        <section id="win-modal" class="modal hidden">
+            <div class="modal-content card">
+                <h1 class="glitch-text">ACCESS GRANTED</h1>
+                <p>Has burlado la matriz de seguridad con éxito.</p>
+                <button id="restart-btn" class="cyber-btn">REINICIAR PROTOCOLO</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/script.js" defer></script>
+</body>
+</html>
