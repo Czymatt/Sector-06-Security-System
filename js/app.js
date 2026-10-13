@@ -1,4 +1,4 @@
-let segundosRestantes = 10;
+let segundosRestantes = 180;
 let intervalo = null;
 
 const temporizador = document.getElementById("temporizador");
