@@ -385,6 +385,9 @@ document.addEventListener('DOMContentLoaded', () => {
         winModal.classList.add('d-none');
         if (currentStage < 3) {
             goToStage(currentStage + 1);
+            // Dentro de goToStage(stageNum), agregá esto:
+    tiempoRestante = 180; // Resetea a 3 minutos (180 segundos)
+    actualizarRelojVisual(); // Función que actualiza el texto "03:00" en pantalla
         }
     });
 
