@@ -1,10 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // ==========================================
-    // VARIABLES GENERALES
+    // VARIABLES GENERALES Y TEMPORIZADOR
     // ==========================================
 
     let currentStage = 1;
+    let segundosRestantes = 180;
+    let intervalo = null;
+
+    const temporizadorEl = document.getElementById("temporizador");
+    const mensajeEl = document.getElementById("mensaje");
+    const btnReiniciar = document.getElementById("btnReiniciar");
 
     const passwordInput = document.getElementById('password-input');
     const lengthVal = document.getElementById('length-val');
@@ -24,52 +30,94 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalDesc = document.getElementById('modal-desc');
     const nextStageBtn = document.getElementById('next-stage-btn');
 
+    // Función para actualizar el texto del reloj en pantalla
+    function mostrarTiempo() {
+        if (!temporizadorEl) return;
+        const minutos = Math.floor(segundosRestantes / 60);
+        const segundos = segundosRestantes % 60;
+        temporizadorEl.textContent = 
+            String(minutos).padStart(2, "0") + ":" + 
+            String(segundos).padStart(2, "0");
+    }
+
+    // Iniciar temporizador automáticamente
+    function iniciarTemporizador() {
+        clearInterval(intervalo);
+        segundosRestantes = 180;
+        mostrarTiempo();
+
+        if (mensajeEl) {
+            mensajeEl.textContent = "Desafío en curso...";
+            mensajeEl.className = "alert alert-info border border-secondary text-light small py-2 mb-3";
+        }
+
+        intervalo = setInterval(() => {
+            segundosRestantes--;
+            mostrarTiempo();
+
+            if (segundosRestantes <= 0) {
+                clearInterval(intervalo);
+                intervalo = null;
+                ejecutarGameOver();
+            }
+        }, 1000);
+    }
+
+    function ejecutarGameOver() {
+        if (mensajeEl) {
+            mensajeEl.textContent = "SYSTEM BREACHED — YOU HAVE BEEN HACKED";
+            mensajeEl.className = "alert alert-danger border border-danger fw-bold small py-2 mb-3";
+        }
+
+        if (passwordInput) passwordInput.disabled = true;
+        if (numericInput) numericInput.disabled = true;
+
+        if (winModal) {
+            winModal.classList.remove('d-none');
+            if (modalTitle) {
+                modalTitle.textContent = 'GAME OVER';
+                modalTitle.className = 'glitch-text text-danger display-5 fw-bold';
+            }
+            if (modalDesc) {
+                modalDesc.textContent = 'El tiempo se ha agotado. El sistema ha colapsado.';
+            }
+            if (nextStageBtn) {
+                nextStageBtn.textContent = 'REINTENTAR';
+                nextStageBtn.className = 'btn btn-danger fw-bold py-2';
+            }
+        }
+    }
+
+    if (btnReiniciar) {
+        btnReiniciar.addEventListener("click", () => {
+            location.reload();
+        });
+    }
+
     // ==========================================
     // ETAPA 1: PASSWORD MATRIX
     // ==========================================
 
     const stage1Rules = [
-        {
-            text: 'La contraseña debe tener al menos 6 caracteres.',
-            check: val => val.length >= 6
-        },
-        {
-            text: 'Debe contener al menos un número arábigo (0-9).',
-            check: val => /\d/.test(val)
-        },
-        {
-            text: 'Debe incluir una letra mayúscula.',
-            check: val => /[A-Z]/.test(val)
-        },
-        {
-            text: 'Debe incluir un carácter especial (!, @, #, $, %).',
-            check: val => /[!@#$%]/.test(val)
-        },
-        {
-            text: 'Debe contener al menos un número romano (I, V, X, L, C, D, M).',
-            check: val => /[IVXLCDM]/.test(val)
-        },
+        { text: 'La contraseña debe tener al menos 6 caracteres.', check: val => val.length >= 6 },
+        { text: 'Debe contener al menos un número arábigo (0-9).', check: val => /\d/.test(val) },
+        { text: 'Debe incluir una letra mayúscula.', check: val => /[A-Z]/.test(val) },
+        { text: 'Debe incluir un carácter especial (!, @, #, $, %).', check: val => /[!@#$%]/.test(val) },
+        { text: 'Debe contener al menos un número romano (I, V, X, L, C, D, M).', check: val => /[IVXLCDM]/.test(val) },
         {
             text: 'Debe incluir el nombre de un país sudamericano.',
             check: val => {
-                const paises = [
-                    'argentina', 'chile', 'brasil', 'uruguay',
-                    'peru', 'bolivia', 'colombia', 'paraguay',
-                    'ecuador', 'venezuela'
-                ];
-
-                return paises.some(pais =>
-                    val.toLowerCase().includes(pais)
-                );
+                const paises = ['argentina', 'chile', 'brasil', 'uruguay', 'peru', 'bolivia', 'colombia', 'paraguay', 'ecuador', 'venezuela'];
+                return paises.some(pais => val.toLowerCase().includes(pais));
             }
         }
     ];
 
     function evaluateStage1() {
-        if (currentStage !== 1) return;
+        if (currentStage !== 1 || !passwordInput || !rulesContainer) return;
 
         const value = passwordInput.value;
-        lengthVal.textContent = value.length;
+        if (lengthVal) lengthVal.textContent = value.length;
 
         let passed = 0;
         rulesContainer.innerHTML = '';
@@ -79,82 +127,48 @@ document.addEventListener('DOMContentLoaded', () => {
             const isPassed = rule.check(value);
 
             const div = document.createElement('div');
-
-            div.className =
-                'p-2 rounded border small d-flex justify-content-between align-items-center ' +
-                (isPassed
-                    ? 'bg-success bg-opacity-20 border-success text-success'
-                    : 'bg-dark border-secondary text-light');
+            div.className = 'p-2 rounded border small d-flex justify-content-between align-items-center ' +
+                (isPassed ? 'bg-success bg-opacity-20 border-success text-success' : 'bg-dark border-secondary text-light');
 
             div.innerHTML = `
-                <span>
-                    <strong>[REGLA ${i + 1}]</strong>
-                    ${rule.text}
-                </span>
-                <strong class="ms-2">
-                    ${isPassed ? '✓ PASADO' : '✗ PENDIENTE'}
-                </strong>
+                <span><strong>[REGLA ${i + 1}]</strong> ${rule.text}</span>
+                <strong class="ms-2">${isPassed ? '✓ PASADO' : '✗ PENDIENTE'}</strong>
             `;
-
             rulesContainer.appendChild(div);
 
             if (!isPassed) break;
-
             passed++;
         }
 
-        passedCount.textContent =
-            `${passed} / ${stage1Rules.length}`;
+        if (passedCount) passedCount.textContent = `${passed} / ${stage1Rules.length}`;
 
         if (passed === stage1Rules.length) {
             showStageCompleteModal(1);
         }
     }
 
-    passwordInput.addEventListener('input', evaluateStage1);
+    if (passwordInput) {
+        passwordInput.addEventListener('input', evaluateStage1);
+    }
 
     // ==========================================
     // ETAPA 2: NUMERIC BYPASS
     // ==========================================
 
     const stage2Rules = [
-        {
-            text: () => 'El código debe contener exactamente 5 dígitos.',
-            check: digits => digits.length === 5
-        },
-        {
-            text: () => 'La suma de los 5 dígitos debe ser exactamente 20.',
-            check: digits =>
-                digits.length === 5 &&
-                digits.reduce((a, b) => a + b, 0) === 20
-        },
-        {
-            text: () => 'No se puede repetir ningún dígito ni utilizar el 0.',
-            check: digits =>
-                !digits.includes(0) &&
-                new Set(digits).size === digits.length
-        },
-        {
-            text: () => 'El último dígito debe ser el doble del segundo.',
-            check: digits =>
-                digits.length === 5 &&
-                digits[4] === digits[1] * 2
-        },
-        {
-            text: () => 'El tercer dígito debe ser el último menos el primero.',
-            check: digits =>
-                digits.length === 5 &&
-                digits[2] === digits[4] - digits[0]
-        }
+        { text: () => 'El código debe contener exactamente 5 dígitos.', check: digits => digits.length === 5 },
+        { text: () => 'La suma de los 5 dígitos debe ser exactamente 20.', check: digits => digits.length === 5 && digits.reduce((a, b) => a + b, 0) === 20 },
+        { text: () => 'No se puede repetir ningún dígito ni utilizar el 0.', check: digits => !digits.includes(0) && new Set(digits).size === digits.length },
+        { text: () => 'El último dígito debe ser el doble del segundo.', check: digits => digits.length === 5 && digits[4] === digits[1] * 2 },
+        { text: () => 'El tercer dígito debe ser el último menos el primero.', check: digits => digits.length === 5 && digits[2] === digits[4] - digits[0] }
     ];
 
     function evaluateStage2() {
-        if (currentStage !== 2) return;
+        if (currentStage !== 2 || !numericInput || !numericRulesContainer) return;
 
         const value = numericInput.value;
         const digits = value.split('').map(Number);
-
-        numLengthVal.textContent = value.length;
+        if (numLengthVal) numLengthVal.textContent = value.length;
 
         let passed = 0;
         numericRulesContainer.innerHTML = '';
@@ -164,70 +178,57 @@ document.addEventListener('DOMContentLoaded', () => {
             const isPassed = rule.check(digits);
 
             const div = document.createElement('div');
-
-            div.className =
-                'p-2 rounded border small d-flex justify-content-between align-items-center ' +
-                (isPassed
-                    ? 'bg-warning bg-opacity-20 border-warning text-warning'
-                    : 'bg-dark border-secondary text-light');
+            div.className = 'p-2 rounded border small d-flex justify-content-between align-items-center ' +
+                (isPassed ? 'bg-warning bg-opacity-20 border-warning text-warning' : 'bg-dark border-secondary text-light');
 
             div.innerHTML = `
-                <span>
-                    <strong>[PISTA 0${i + 1}]</strong>
-                    ${rule.text()}
-                </span>
-                <strong class="ms-2">
-                    ${isPassed ? '✓ CUMPLIDA' : '✗ PENDIENTE'}
-                </strong>
+                <span><strong>[PISTA 0${i + 1}]</strong> ${rule.text()}</span>
+                <strong class="ms-2">${isPassed ? '✓ CUMPLIDA' : '✗ PENDIENTE'}</strong>
             `;
-
             numericRulesContainer.appendChild(div);
 
             if (!isPassed) break;
-
             passed++;
         }
 
-        passedCount.textContent =
-            `${passed} / ${stage2Rules.length}`;
+        if (passedCount) passedCount.textContent = `${passed} / ${stage2Rules.length}`;
 
         if (passed === stage2Rules.length) {
             showStageCompleteModal(2);
         }
     }
 
-    // Teclado numérico de la pantalla
     document.querySelectorAll('.num-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            if (
-                currentStage === 2 &&
-                numericInput.value.length < 5
-            ) {
+            if (currentStage === 2 && numericInput && numericInput.value.length < 5) {
                 numericInput.value += btn.dataset.val;
                 evaluateStage2();
             }
         });
     });
 
-    // Borrar todos los dígitos
-    document.getElementById('num-clear').addEventListener('click', () => {
-        if (currentStage === 2) {
-            numericInput.value = '';
-            evaluateStage2();
-        }
-    });
+    const numClear = document.getElementById('num-clear');
+    if (numClear) {
+        numClear.addEventListener('click', () => {
+            if (currentStage === 2 && numericInput) {
+                numericInput.value = '';
+                evaluateStage2();
+            }
+        });
+    }
 
-    // Borrar el último dígito
-    document.getElementById('num-backspace').addEventListener('click', () => {
-        if (currentStage === 2) {
-            numericInput.value = numericInput.value.slice(0, -1);
-            evaluateStage2();
-        }
-    });
+    const numBackspace = document.getElementById('num-backspace');
+    if (numBackspace) {
+        numBackspace.addEventListener('click', () => {
+            if (currentStage === 2 && numericInput) {
+                numericInput.value = numericInput.value.slice(0, -1);
+                evaluateStage2();
+            }
+        });
+    }
 
-    // Teclado físico
     document.addEventListener('keydown', e => {
-        if (currentStage !== 2) return;
+        if (currentStage !== 2 || !numericInput) return;
 
         if (e.key >= '0' && e.key <= '9') {
             if (numericInput.value.length < 5) {
@@ -244,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
-    // ETAPA 3: TERMINAL OVERRIDE (CIFRADO CÉSAR)
+    // ETAPA 3: TERMINAL OVERRIDE
     // ==========================================
 
     const stage3Messages = [
@@ -265,167 +266,148 @@ document.addEventListener('DOMContentLoaded', () => {
     const caesarSubmitBtn = document.getElementById('caesar-submit-btn');
     const caesarFeedbackEl = document.getElementById('caesar-feedback');
 
-    // Función para cifrar texto con Código César
     function cipherText(text, shift) {
         let result = "";
         for (let i = 0; i < text.length; i++) {
-            let char = text[i];
             let code = text.charCodeAt(i);
             if (code >= 65 && code <= 90) {
-                char = String.fromCharCode(((code - 65 + shift) % 26) + 65);
+                result += String.fromCharCode(((code - 65 + shift) % 26) + 65);
+            } else {
+                result += text[i];
             }
-            result += char;
         }
         return result;
     }
 
-    // Renderizar abecedario de referencia en celdas (Tabla)
     function renderAlphabetReference() {
         const tableBody = document.getElementById('alphabet-table-body');
         if (!tableBody) return;
         tableBody.innerHTML = '';
-
         const alphabet = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
-        const lettersPerRow = 5; // Cantidad de letras por fila
+        const lettersPerRow = 5;
         
         for (let i = 0; i < alphabet.length; i += lettersPerRow) {
             const tr = document.createElement('tr');
-            
-            // Creamos las celdas para este bloque de 5 letras
             for (let j = 0; j < lettersPerRow; j++) {
                 const td = document.createElement('td');
                 td.className = 'bg-black text-success fw-bold fs-5 p-2 border-secondary text-center';
-                
-                // Si la letra existe dentro del abecedario, la ponemos; si sobra espacio en la última fila, queda vacío
-                if (i + j < alphabet.length) {
-                    td.textContent = alphabet[i + j];
-                } else {
-                    td.textContent = "";
-                }
+                td.textContent = (i + j < alphabet.length) ? alphabet[i + j] : "";
                 tr.appendChild(td);
             }
             tableBody.appendChild(tr);
         }
     }
 
-    // Inicializar la Etapa 3 con valores aleatorios
     function initStage3() {
         if (currentStage !== 3) return;
-
         const randomMsgObj = stage3Messages[Math.floor(Math.random() * stage3Messages.length)];
         caesarCurrentOriginal = randomMsgObj.original;
-
         caesarShift = Math.floor(Math.random() * 6) + 2;
         caesarCurrentCiphered = cipherText(caesarCurrentOriginal, caesarShift);
 
         if (cipheredMsgEl) cipheredMsgEl.textContent = caesarCurrentCiphered;
-        if (caesarHintEl) caesarHintEl.textContent = `Pista: ${randomMsgObj.hint} (Desplazamiento: ${caesarShift} posiciones hacia atrás)`;
+        if (caesarHintEl) caesarHintEl.textContent = `Pista: ${randomMsgObj.hint} (Desplazamiento: ${caesarShift} posiciones)`;
         if (caesarInput) caesarInput.value = '';
         if (caesarFeedbackEl) caesarFeedbackEl.textContent = '';
-
         renderAlphabetReference();
     }
 
-    // Comprobar la respuesta del Cifrado César
     function evaluateStage3() {
-        if (currentStage !== 3) return;
-
+        if (currentStage !== 3 || !caesarInput) return;
         const userValue = caesarInput.value.trim().toUpperCase();
 
         if (userValue === caesarCurrentOriginal) {
-            caesarFeedbackEl.textContent = '¡Correcto! Acceso concedido al sector.';
-            caesarFeedbackEl.className = 'text-success fw-bold mt-2';
-            
-            passedCount.textContent = '3 / 3';
-
-            setTimeout(() => {
-                showStageCompleteModal(3);
-            }, 1000);
+            if (caesarFeedbackEl) {
+                caesarFeedbackEl.textContent = '¡Correcto! Acceso concedido al sector.';
+                caesarFeedbackEl.className = 'text-success fw-bold mt-2';
+            }
+            if (passedCount) passedCount.textContent = '3 / 3';
+            setTimeout(() => showStageCompleteModal(3), 1000);
         } else {
-            caesarFeedbackEl.textContent = '✗ Código incorrecto. Probá de nuevo usando el abecedario.';
-            caesarFeedbackEl.className = 'text-danger fw-bold mt-2';
+            if (caesarFeedbackEl) {
+                caesarFeedbackEl.textContent = '✗ Código incorrecto. Probá de nuevo usando el abecedario.';
+                caesarFeedbackEl.className = 'text-danger fw-bold mt-2';
+            }
         }
     }
 
-    if (caesarSubmitBtn) {
-        caesarSubmitBtn.addEventListener('click', evaluateStage3);
-    }
-
+    if (caesarSubmitBtn) caesarSubmitBtn.addEventListener('click', evaluateStage3);
     if (caesarInput) {
         caesarInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                evaluateStage3();
-            }
+            if (e.key === 'Enter') evaluateStage3();
         });
     }
 
     // ==========================================
-    // CARTEL DE TRANSICIÓN
+    // MODAL Y CAMBIO DE ETAPAS
     // ==========================================
 
     function showStageCompleteModal(stage) {
+        if (!winModal) return;
         winModal.classList.remove('d-none');
 
         if (stage === 1) {
-            modalTitle.textContent = '¡ETAPA 1 COMPLETADA!';
-            modalDesc.innerHTML = `Contraseña aceptada.`;
-            nextStageBtn.textContent = 'PASAR A LA ETAPA 2';
+            if (modalTitle) modalTitle.textContent = '¡ETAPA 1 COMPLETADA!';
+            if (modalDesc) modalDesc.textContent = 'Contraseña aceptada.';
+            if (nextStageBtn) nextStageBtn.textContent = 'PASAR A LA ETAPA 2';
         } else if (stage === 2) {
-            modalTitle.textContent = '¡ETAPA 2 COMPLETADA!';
-            modalDesc.textContent = 'Has descifrado el código numérico correctamente.';
-            nextStageBtn.textContent = 'CONTINUAR A LA ETAPA 3';
+            if (modalTitle) modalTitle.textContent = '¡ETAPA 2 COMPLETADA!';
+            if (modalDesc) modalDesc.textContent = 'Has descifrado el código numérico correctamente.';
+            if (nextStageBtn) nextStageBtn.textContent = 'CONTINUAR A LA ETAPA 3';
         } else if (stage === 3) {
-            modalTitle.textContent = '¡SISTEMA DOMINADO!';
-            modalDesc.textContent = 'Has completado todas las fases de seguridad con éxito.';
-            nextStageBtn.textContent = 'FIN DEL JUEGO';
+            if (modalTitle) modalTitle.textContent = '¡SISTEMA DOMINADO!';
+            if (modalDesc) modalDesc.textContent = 'Has completado todas las fases de seguridad con éxito.';
+            if (nextStageBtn) nextStageBtn.textContent = 'REINICIAR JUEGO';
         }
     }
 
-    nextStageBtn.addEventListener('click', () => {
-        winModal.classList.add('d-none');
-        if (currentStage < 3) {
-            goToStage(currentStage + 1);
-            // Dentro de goToStage(stageNum), agregá esto:
-    tiempoRestante = 180; // Resetea a 3 minutos (180 segundos)
-    actualizarRelojVisual(); // Función que actualiza el texto "03:00" en pantalla
-        }
-    });
-
-    // ==========================================
-    // CAMBIO DE ETAPAS (Única función)
-    // ==========================================
+    if (nextStageBtn) {
+        nextStageBtn.addEventListener('click', () => {
+            if (currentStage < 3) {
+                winModal.classList.add('d-none');
+                goToStage(currentStage + 1);
+                // Opcional: si querés que recupere tiempo al pasar de etapa o siga corriendo:
+            } else {
+                location.reload();
+            }
+        });
+    }
 
     function goToStage(stageNum) {
         currentStage = stageNum;
+        const s1 = document.getElementById('stage-1');
+        const s2 = document.getElementById('stage-2');
+        const s3 = document.getElementById('stage-3');
 
-        document.getElementById('stage-1').classList.add('d-none');
-        document.getElementById('stage-2').classList.add('d-none');
-        document.getElementById('stage-3').classList.add('d-none');
+        if (s1) s1.classList.add('d-none');
+        if (s2) s2.classList.add('d-none');
+        if (s3) s3.classList.add('d-none');
 
         if (stageNum === 1) {
-            document.getElementById('stage-1').classList.remove('d-none');
-            stageTitle.textContent = '[STAGE_01 // PASSWORD_MATRIX]';
-            sectorLabel.textContent = '// SECTOR 01';
+            if (s1) s1.classList.remove('d-none');
+            if (stageTitle) stageTitle.textContent = '[STAGE_01 // PASSWORD_MATRIX]';
+            if (sectorLabel) sectorLabel.textContent = '// SECTOR 01';
             evaluateStage1();
-
         } else if (stageNum === 2) {
-            document.getElementById('stage-2').classList.remove('d-none');
-            stageTitle.textContent = '[STAGE_02 // NUMERIC_BYPASS]';
-            sectorLabel.textContent = '// SECTOR 02';
-            numericInput.value = '';
+            if (s2) s2.classList.remove('d-none');
+            if (stageTitle) stageTitle.textContent = '[STAGE_02 // NUMERIC_BYPASS]';
+            if (sectorLabel) sectorLabel.textContent = '// SECTOR 02';
+            if (numericInput) numericInput.value = '';
             evaluateStage2();
-
         } else if (stageNum === 3) {
-            document.getElementById('stage-3').classList.remove('d-none');
-            stageTitle.textContent = '[STAGE_03 // TERMINAL_OVERRIDE]';
-            sectorLabel.textContent = '// SECTOR 03';
-            sysStatus.textContent = 'ACTIVE_DECRYPTION';
-            sysStatus.className = 'value text-warning';
+            if (s3) s3.classList.remove('d-none');
+            if (stageTitle) stageTitle.textContent = '[STAGE_03 // TERMINAL_OVERRIDE]';
+            if (sectorLabel) sectorLabel.textContent = '// SECTOR 03';
+            if (sysStatus) {
+                sysStatus.textContent = 'ACTIVE_DECRYPTION';
+                sysStatus.className = 'value text-warning';
+            }
             initStage3();
         }
     }
 
-    // Iniciar el juego en la Etapa 1
+    // ARRANQUE INMEDIATO AL CARGAR LA PÁGINA
     goToStage(1);
+    iniciarTemporizador();
 
 });
