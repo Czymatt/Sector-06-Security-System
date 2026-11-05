@@ -30,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalDesc = document.getElementById('modal-desc');
     const nextStageBtn = document.getElementById('next-stage-btn');
 
-    // Función para actualizar el texto del reloj en pantalla
     function mostrarTiempo() {
         if (!temporizadorEl) return;
         const minutos = Math.floor(segundosRestantes / 60);
@@ -40,7 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
             String(segundos).padStart(2, "0");
     }
 
-    // Iniciar temporizador automáticamente
     function iniciarTemporizador() {
         clearInterval(intervalo);
         segundosRestantes = 180;
@@ -152,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // ETAPA 2: NUMERIC BYPASS
+    // ETAPA 2: NUMERIC BYPASS (CORREGIDA)
     // ==========================================
 
     const stage2Rules = [
@@ -198,10 +196,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.querySelectorAll('.num-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
+    // Manejo limpio de botones numéricos en pantalla (evita duplicados)
+    const numButtons = document.querySelectorAll('.num-btn');
+    numButtons.forEach(btn => {
+        // Clonamos el botón o limpiamos eventos previos reemplazándolos para evitar doble binding
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+
+        newBtn.addEventListener('click', () => {
             if (currentStage === 2 && numericInput && numericInput.value.length < 5) {
-                numericInput.value += btn.dataset.val;
+                numericInput.value += newBtn.dataset.val;
                 evaluateStage2();
             }
         });
@@ -209,7 +213,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const numClear = document.getElementById('num-clear');
     if (numClear) {
-        numClear.addEventListener('click', () => {
+        const newClear = numClear.cloneNode(true);
+        numClear.parentNode.replaceChild(newClear, numClear);
+        newClear.addEventListener('click', () => {
             if (currentStage === 2 && numericInput) {
                 numericInput.value = '';
                 evaluateStage2();
@@ -219,7 +225,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const numBackspace = document.getElementById('num-backspace');
     if (numBackspace) {
-        numBackspace.addEventListener('click', () => {
+        const newBack = numBackspace.cloneNode(true);
+        numBackspace.parentNode.replaceChild(newBack, numBackspace);
+        newBack.addEventListener('click', () => {
             if (currentStage === 2 && numericInput) {
                 numericInput.value = numericInput.value.slice(0, -1);
                 evaluateStage2();
@@ -227,6 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Teclado físico controlado para la etapa 2
     document.addEventListener('keydown', e => {
         if (currentStage !== 2 || !numericInput) return;
 
@@ -366,7 +375,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentStage < 3) {
                 winModal.classList.add('d-none');
                 goToStage(currentStage + 1);
-                // Opcional: si querés que recupere tiempo al pasar de etapa o siga corriendo:
             } else {
                 location.reload();
             }
@@ -410,4 +418,4 @@ document.addEventListener('DOMContentLoaded', () => {
     goToStage(1);
     iniciarTemporizador();
 
-});
+});s
